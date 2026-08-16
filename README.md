@@ -1,4 +1,4 @@
-# Arcaea 表情包生成器
+# Arcaea 贴纸生成器
 
 [![AstrBot](https://img.shields.io/badge/AstrBot-插件-green.svg)](https://github.com/Soulter/AstrBot) [![Version](https://img.shields.io/badge/Version---0.0.1-blue)]()
 
