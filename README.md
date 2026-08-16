@@ -15,12 +15,12 @@ https://img.shields.io/badge/AstrBot-插件-green.svg https://img.shields.io/bad
 ```
 astrbot_plugin_arcaeaStickers/
 ├── main.py
-├── resources/          # 角色图片（必须）
-├── fonts/              # 字体文件（可选）
-├── emoji/              # 随机表情包图库（可选）
-├── list/               # 角色列表图片（可选）
-├── characters_defaults.json  # 角色默认配置（可选）
-└── config.json         # 插件配置文件（可选）
+├── resources/    # 角色图片
+├── fonts/    # 字体文件
+├── characters_defaults.json
+├── main.py
+├── metadata.yaml
+├── requirements.txt
 ```
 
 2. 安装依赖
