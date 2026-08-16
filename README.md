@@ -1,6 +1,6 @@
 # Arcaea 表情包生成器
 
-https://img.shields.io/badge/AstrBot-插件-green.svg https://img.shields.io/badge/Version---0.0.1-blue
+[![AstrBot](https://img.shields.io/badge/AstrBot-插件-green.svg)](https://github.com/Soulter/AstrBot) [![Version](https://img.shields.io/badge/Version---0.0.1-blue)]()
 
 本插件是 [astrbot_plugin_arcaea](https://github.com/1-20182/astrbot_plugin_arcaea) 的修改版。
 
