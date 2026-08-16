@@ -1,0 +1,211 @@
+{
+	"hikari": {
+		"text": "嗨!",
+		"x": 40.0,
+		"y": 70.0,
+		"rotation": 40,
+		"font_size": 45,
+		"color": "#FFE7B5",
+		"color0": "#F18A0E"
+	},
+	"fracture": {
+		"text": "\n",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": 0,
+		"font_size": 45,
+		"color": "#FFE7B5",
+		"color0": "#F18A0E"
+	},
+	"tairitsu": {
+		"text": "最后一首",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": 0,
+		"font_size": 45,
+		"color": "#80E8D5",
+		"color0": "#33A18D"
+	},
+	"grievous": {
+		"text": "\n",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": 0,
+		"font_size": 45,
+		"color": "#80E8D5",
+		"color0": "#33A18D"
+	},
+	"tempest": {
+		"text": "\n",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": 0,
+		"font_size": 45,
+		"color": "#80E8D5",
+		"color0": "#33A18D"
+	},
+	"lagrange": {
+		"text": "马上回来",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": 0,
+		"font_size": 45,
+		"color": "#BBD7FA",
+		"color0": "#5491DE"
+	},
+	"aichan": {
+		"text": "我是人机",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": 0,
+		"font_size": 45,
+		"color": "#CCB4E8",
+		"color0": "#A18FB5"
+	},
+	"eto": {
+		"text": "嘿嘿★",
+		"x": 37.5,
+		"y": 75.0,
+		"rotation": 20,
+		"font_size": 45,
+		"color": "#79CFE8",
+		"color0": "#099CC6"
+	},
+	"luna": {
+		"text": "哼哼!",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": -4,
+		"font_size": 45,
+		"color": "#C09EDD",
+		"color0": "#7B49A6"
+	},
+	"ilith": {
+		"text": "表现不错",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": -4,
+		"font_size": 45,
+		"color": "#C09EDD",
+		"color0": "#C30E2B"
+	},
+	"kou": {
+		"text": "很棒喔!",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": -4,
+		"font_size": 45,
+		"color": "#FFD5D5",
+		"color0": "#F15E90"
+	},
+	"nami": {
+		"text": "欸—",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": 8,
+		"font_size": 60,
+		"color": "#F9C2CB",
+		"color0": "#F7405F"
+	},
+	"vita": {
+		"text": "好!",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": -4,
+		"font_size": 45,
+		"color": "#F58194",
+		"color0": "#C5122F"
+	},
+	"maya": {
+		"text": "\n",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": -4,
+		"font_size": 45,
+		"color": "#F1DECF",
+		"color0": "#D1974E"
+	},
+	"ayu": {
+		"text": "\n",
+		"x": 50.0,
+		"y": 65.6,
+		"rotation": 4,
+		"font_size": 45,
+		"color": "#3BE9DF",
+		"color0": "#31C1B7"
+	},
+	"kanae": {
+		"text": "\n",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": 0,
+		"font_size": 45,
+		"color": "#FFE7B5",
+		"color0": "#F18A0E"
+	},
+	"saya": {
+		"text": "\n",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": 0,
+		"font_size": 45,
+		"color": "#80E8D5",
+		"color0": "#33A18D"
+	},
+	"shirabe": {
+		"text": "\n",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": 0,
+		"font_size": 45,
+		"color": "#E5616E",
+		"color0": "#974249"
+	},
+	"lethe": {
+		"text": "\n",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": 0,
+		"font_size": 45,
+		"color": "#F7D3C3",
+		"color0": "#E3BAA8"
+	},
+	"insight": {
+		"text": "\n",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": 0,
+		"font_size": 45,
+		"color": "#C8CBEA",
+		"color0": "#A8AAC3"
+	},
+	"nonoka": {
+		"text": "有点搞",
+		"x": 34.5,
+		"y": 71.9,
+		"rotation": 6,
+		"font_size": 45,
+		"color": "#EEE0AF",
+		"color0": "#BDB48B"
+	},
+	"shirahime": {
+		"text": "喜$$$欢...",
+		"x": 50.0,
+		"y": 77.3,
+		"rotation": 0,
+		"font_size": 45,
+		"color": "#C3D5FF",
+		"color0": "#697EE8",
+		"color1": "#F9C2CB",
+		"color2": "#F74462"
+	},
+	"sia": {
+		"text": "请看！",
+		"x": 28.0,
+		"y": 18.2,
+		"rotation": 1.5,
+		"font_size": 42,
+		"color": "#E3C498",
+		"color0": "#8D6E42"
+	}
+}
