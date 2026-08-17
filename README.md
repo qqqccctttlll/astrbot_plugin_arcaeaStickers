@@ -10,17 +10,14 @@
 
 1. 放置文件
 
-将本插件文件夹 `astrbot_plugin_arcaeaStickers` 放入 AstrBot 的 `data/plugins `目录（或 AstrBot 指定的插件目录），确保目录结构如下：
+将本插件文件夹`astrbot_plugin_arcaeaStickers`放入`data/plugins`目录（或指定插件目录），结构如下：
 
 ```
 astrbot_plugin_arcaeaStickers/
 ├── main.py
-├── resources/    # 角色图片
-├── fonts/    # 字体文件
-├── characters_defaults.json
-├── main.py
-├── metadata.yaml
-├── requirements.txt
+├── resources/ #图片
+├── fonts/ #字体
+├── characters_defaults.json #默认
 ```
 
 2. 安装依赖
@@ -31,11 +28,11 @@ pip install Pillow
 
 3. 准备资源
 
-· 贴纸：放入 `resources` 目录，文件名必须为角色英文名（小写）+ .png，例如 `hikari.png`、`tairitsu.png`。图片建议尺寸为 1425×1425（插件会自动缩放）。
-· 字体：将任意 .ttf 字体文件放入 fonts 目录（插件会自动使用第一个找到的字体）。若无字体，插件将尝试使用系统字体 `/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`。
-· 图库：将图片（支持 .png/.jpg/.jpeg/.gif/.bmp）放入指定目录（用户可以自行在`main.py`中配置，默认`/AstrBot/imgs/default/`），用于随机发送功能，关键词也可以自行在`main.py`中配置，默认`随插`。
+· 贴纸：放入 `resources` 目录，文件名为角色英文名（小写）+ .png，例`ayu.png`、`eto.png`
+· 字体：将任意 .ttf 字体文件放入 fonts 目录（插件会自动使用第一个找到的字体）。若无字体，插件将尝试使用`/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`
+· 图库：将图片（.png/.jpg/.jpeg/.gif/.bmp）放入指定目录（可自行在`main.py`中配置，默认`/AstrBot/imgs/default/`），用于随机发送功能，关键词可自行在`main.py`中配置，默认`随插`
 
-4. 重启 AstrBot
+4. 重启AstrBot
 
 重启后插件即生效。
 
@@ -43,7 +40,7 @@ pip install Pillow
 
 ## 角色列表及别名
 
-发送 `/arc list` 可查看当前支持的角色及其中文别名。以下为内置别名（用户可自行在 `main.py` 的 CHARACTER_ALIASES 中扩充）：
+`/arc list`可查看当前支持的角色及其中文别名。以下为内置别名（用户可自行在`main.py`的 CHARACTER_ALIASES 中扩充）：
 
 ```
 英文名 中文别名
@@ -72,7 +69,7 @@ vita 维塔
 sia 兮娅
 ```
 
-💡 如果角色图片文件名与上表不同，请自行修改 CHARACTER_ALIASES 映射。
+如果角色图片文件名与上表不同，请自行修改 CHARACTER_ALIASES 映射。
 
 ---
 
@@ -91,7 +88,7 @@ sia 兮娅
 
 高级模式参数详解
 
-参数顺序必须严格遵循，可以使用 `__`（两个下划线）占位表示使用该参数的默认值（角色默认配置或全局默认值）。
+参数顺序必须严格遵循，可以使用`__`（俩下划线）占位表示使用该参数的默认值（角色默认配置或全局默认值）。
 
 位置 参数名 类型 说明
 1 角色 string 角色英文名或中文别名
@@ -130,52 +127,54 @@ sia 兮娅
 
 ### 角色默认配置
 
-你可以通过 `characters_defaults.json` 为每个角色设定默认参数，这样使用默认模式时无需每次都输入参数。
+通过`characters_defaults.json`为每个角色设定默认参数，使用默认模式时无需每次输入参数。
 
 格式示例：
 
 ```json
 {
-  "hikari": {
-    "text": "我是对立",
-    "x": 50,
-    "y": 50,
-    "color": "#FFFFFF",
-    "color0": "#000000",
-    "rotation": -2,
-    "font_size": 50,
-    "leading": 0,
-    "png_bg": false,
-    "curve": false
-  },
-  "tairitsu": {
-    "text": "我是光光",
-    "x": 30,
-    "y": 70,
-    "color": "#FF6666",
-    "color0": "#660000"
-  }
+	"hikari": {
+		"text": "我是对立",
+		"x": 50,
+		"y": 50,
+		"color": "#FFFFFF",
+		"color0": "#000000",
+		"rotation": -2,
+		"font_size": 50,
+		"leading": 0,
+		"png_bg": false,
+		"curve": false
+	},
+	"tairitsu": {
+		"text": "我是光光",
+		"x": 30,
+		"y": 70,
+		"color": "#FF6666",
+		"color0": "#660000"
+	}
 }
 ```
 
-未设置的字段将使用全局默认值（在 `main.py` 中定义）。
+未设置的字段将使用全局默认值（`main.py`定义）
 
 ---
 
 ## 致谢
 
-· 本插件基于 [astrbot_plugin_arcaea](https://github.com/1-20182/astrbot_plugin_arcaea) 改写
+· 本插件基于[astrbot_plugin_arcaea](https://github.com/1-20182/astrbot_plugin_arcaea)改写
 
-· 感谢AinK(UID:589858398)绘制的兮娅(Sia)(BV1MFg36uEor)，很可爱
+· 感谢AinK(UID:589858398)绘制的兮娅(Sia)(BV1MFg36uEor)很可爱
 
 ---
 
 ## 许可证
 
-本项目采用 MIT 许可证。欢迎二次开发。
+本项目采用 MIT 许可证
+欢迎二次开发
 
-如有问题或建议，欢迎提交 Issue 或 Pull Request。
+如有问题或建议，欢迎提交 Issue 或 Pull Request
 
 ---
 
-以上大部分由AI生成，联系的话建议2824233866@qq.com，当然还是更建议直接QQ，GitHub基本不看
+以上大部分由AI生成，联系建议2824233866@qq.com更建议直接QQ
+GitHub基本不看
