@@ -350,7 +350,7 @@ class ArcaeaStickerPlugin(Star):
 		color: str, color0: str, rotate: float, point: int,
 		leading: int, png_bg: bool, curve: bool,
 		color1: str = None, color2: str = None) -> PILImage.Image:
-		CANVAS_SIZE = (1425, 1425)
+		CANVAS_SIZE = (800, 800)
 		SCALE = CANVAS_SIZE[0] / 296
 
 		center_x = int(CANVAS_SIZE[0] * width / 100)
