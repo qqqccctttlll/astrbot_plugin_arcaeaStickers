@@ -2,7 +2,7 @@ name: astrbot_plugin_arcaeaStickers
 description: Arcaea贴纸生成器
 desc: Arcaea贴纸生成器
 help: /arc_help
-version: 0.0.0
+version: 0.0.114514
 author: 犭查扌立
 display_name: Arcaea贴纸生成器
 repo: https://github.com/qqqccctttlll/astrbot_plugin_arcaeaStickers
