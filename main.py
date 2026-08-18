@@ -12,7 +12,7 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 from astrbot.api.message_components import Image, Plain, Node, Nodes
 
-@register("astrbot_plugin_arcaeaStickers", "犭查扌立", "Arcaea贴纸生成器", "0.0.0")
+@register("astrbot_plugin_arcaeaStickers", "犭查扌立", "Arcaea贴纸生成器", "0.0.114514")
 class ArcaeaStickerPlugin(Star):
 	HELP_TEXT = (
 		"def:/arc <id> [文]\n"
