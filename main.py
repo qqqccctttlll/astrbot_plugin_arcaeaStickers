@@ -12,7 +12,7 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 from astrbot.api.message_components import Image, Plain, Node, Nodes
 
-@register("astrbot_plugin_arcaeaStickers", "犭查扌立", "Arcaea贴纸生成器", "0.0.114514")
+@register("astrbot_plugin_arcaeaStickers", "犭查扌立", "Arcaea贴纸生成器", "0.0.2147483648")
 class ArcaeaStickerPlugin(Star):
 	HELP_TEXT = (
 		"def:/arc <id> [文]\n"
@@ -52,6 +52,8 @@ class ArcaeaStickerPlugin(Star):
 		super().__init__(context)
 		self.resource_dir = os.path.join(os.path.dirname(__file__), "resources")
 		os.makedirs(self.resource_dir, exist_ok=True)
+
+		self.excludes_files = {"1ASL.png"}
 
 		self.character_defaults = self._load_character_defaults()
 
@@ -100,7 +102,7 @@ class ArcaeaStickerPlugin(Star):
 	def _scan_characters(self) -> list:
 		if not os.path.exists(self.resource_dir):
 			return []
-		return [f[:-4] for f in os.listdir(self.resource_dir) if f.lower().endswith(".png")]
+		return [f[:-4] for f in os.listdir(self.resource_dir) if f.lower().endswith(".png") and f not in self.excludes_files]
 
 	def _resolve_character(self, name: str) -> str | None:
 		key = name.lower()
@@ -141,50 +143,59 @@ class ArcaeaStickerPlugin(Star):
 			num_match = re.search(r'^(\d+)', after_kw)
 			num = int(num_match.group(1)) if num_match else 1
 			num = max(1, min(num, 5))
-
-			images = [f for f in os.listdir(self.illustration_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
-			if not images:
-				yield event.plain_result("图库为空或不存在")
-				return
-
-			if num == 1:
-				chosen = random.choice(images)
-				img_path = os.path.join(self.illustration_dir, chosen)
-				yield event.chain_result([Image.fromFileSystem(img_path)])
-			else:
-				selected = random.sample(images, min(num, len(images)))
-				bot_name = event.get_sender_name() or "Etoile"
-				self_id = event.get_self_id() or "0"
-				nodes = []
-				for img_name in selected:
-					img_path = os.path.join(self.illustration_dir, img_name)
-					nodes.append(Node(
-						content=[Image.fromFileSystem(img_path)],
-						name=bot_name,
-						uin=self_id,
-					))
-				yield event.chain_result([Nodes(nodes)])
+		elif message_str == "sc":
+			num = 1
+		elif re.match(r'^sc\d+$', message_str):
+			num = int(message_str[2:])
+			num = max(1, min(num, 5))
+		else:
 			return
 
-	@filter.command("arc_list")
-	async def arc_role_list_command(self, event: AstrMessageEvent):
-		list_img_path = os.path.join(self.resource_dir, "1.png")
-		if os.path.exists(list_img_path):
-			yield event.chain_result([Image.fromFileSystem(list_img_path)])
+		images = [f for f in os.listdir(self.illustration_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
+		if not images:
+			yield event.plain_result("图库为空或不存在")
+			return
+
+		if num == 1:
+			chosen = random.choice(images)
+			img_path = os.path.join(self.illustration_dir, chosen)
+			yield event.chain_result([Image.fromFileSystem(img_path)])
 		else:
-			yield event.plain_result("图片不存在")
+			selected = random.sample(images, min(num, len(images)))
+			bot_name = event.get_sender_name() or "Etoile"
+			self_id = event.get_self_id() or "0"
+			nodes = []
+			for img_name in selected:
+				img_path = os.path.join(self.illustration_dir, img_name)
+				nodes.append(Node(
+					content=[Image.fromFileSystem(img_path)],
+					name=bot_name,
+					uin=self_id,
+				))
+			yield event.chain_result([Nodes(nodes)])
+		return
 
 	@filter.command("arc")
 	async def arc_command(self, event: AstrMessageEvent):
 		parts = self._split_args(event.message_str)
 
-		if not parts:
-			yield event.plain_result(self.HELP_TEXT)
-			event.stop_event()
-			return
-
-		if parts[1].lower() == "list":
-			yield event.plain_result(self._list_characters())
+		if len(parts) == 1 or parts[1].lower() == "help":
+			bot_name = event.get_sender_name() or "Etoile"
+			self_id = event.get_self_id() or "0"
+			contents = [self.HELP_TEXT, self._list_characters()]
+			list_img_path = os.path.join(self.resource_dir, "1ASL.png")
+			if os.path.exists(list_img_path):
+				contents.append(Image.fromFileSystem(list_img_path))
+			else:
+				contents.append("（角色列表图片缺失）")
+			nodes = []
+			for content in contents:
+				if isinstance(content, str):
+					msg_element = Plain(content)
+				else:
+					msg_element = content
+				nodes.append(Node(content=[msg_element], name=bot_name, uin=self_id))
+			yield event.chain_result([Nodes(nodes)])
 			event.stop_event()
 			return
 
@@ -193,7 +204,7 @@ class ArcaeaStickerPlugin(Star):
 		if character is None:
 			yield event.plain_result(
 				f"未知角色：{raw_character}。可用角色：{', '.join(self.available_characters)}\n"
-				f"使用 /arc list 查看角色列表"
+				f"使用 /arc help 查看角色列表"
 			)
 			event.stop_event()
 			return
@@ -474,10 +485,6 @@ class ArcaeaStickerPlugin(Star):
 			canvas = PILImage.alpha_composite(canvas, txt_layer)
 
 		return canvas
-
-	@filter.command("arc_help")
-	async def arc_help(self, event: AstrMessageEvent):
-		yield event.plain_result(self.HELP_TEXT)
 
 	async def terminate(self):
 		logger.info("Arcaea Sticker 插件已卸载")
