@@ -34,7 +34,7 @@ pip install Pillow
 
 字体：将 .ttf 字体文件放入 fonts 目录（插件会自动使用第一个找到的字体）。若无字体，插件将尝试使用系统字体`/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`。
 
-随机图库：将图片（.png/.jpg/.jpeg/.gif/.bmp）放入指定目录（可在`main.py`中修改，默认`/root/AstrBot/imgs/default/`），用于随机发送功能。触发词为 “随插” 或 “sc”，后接数字可指定发送张数（1~5），例如 随插3、sc2，当然你把double塞进去也不会有什么问题。
+随机图库：将图片（.png/.jpg/.jpeg/.gif/.bmp）放入指定目录（可在`main.py`中修改，默认`/root/AstrBot/imgs/default/`），用于随机发送功能。触发词为 “随插” 或 “sc”，后接数字可指定发送张数（1~5），例如 随插3、sc2，当然你把double塞进去也不会有什么问题，另外这两个你也可以在`main.py`中任意配置，只要不冲突就行。
 
 4. 重启 AstrBot
 
