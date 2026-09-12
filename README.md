@@ -1,8 +1,10 @@
 # Arcaea 贴纸生成器
 
-[![AstrBot](https://img.shields.io/badge/AstrBot-插件-green.svg)](https://github.com/Soulter/AstrBot) [![Version](https://img.shields.io/badge/Version-0.0.2147483648-blue)]()
+[![AstrBot](https://img.shields.io/badge/AstrBot-插件-green.svg)](https://github.com/Soulter/AstrBot) [![Version](https://img.shields.io/badge/Version-0.0.3.14159265-blue)]()
 
 本插件是 [astrbot_plugin_arcaea](https://github.com/1-20182/astrbot_plugin_arcaea) 的修改版。
+
+逐字渲染前最后一版不改了，再改我是pig。
 
 ---
 
@@ -18,6 +20,7 @@ astrbot_plugin_arcaeaStickers/
 ├── resources/                  # 角色贴纸图片
 ├── fonts/                      # 字体文件
 ├── characters_defaults.json    # 角色默认参数
+├── _conf_schema.json         # 配置选项文件
 ```
 
 2. 安装依赖
@@ -34,13 +37,35 @@ pip install Pillow
 
 字体：将 .ttf 字体文件放入 fonts 目录（插件会自动使用第一个找到的字体）。若无字体，插件将尝试使用系统字体`/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`。
 
-随机图库：将图片（.png/.jpg/.jpeg/.gif/.bmp）放入指定目录（可在`main.py`中修改，默认`/root/AstrBot/imgs/default/`），用于随机发送功能。触发词为 “随插” 或 “sc”，后接数字可指定发送张数（1~5），例如 随插3、sc2，当然你把double塞进去也不会有什么问题，另外这两个你也可以在`main.py`中任意配置，只要不冲突就行。
+随机图库：将图片（.png/.jpg/.jpeg/.gif/.bmp）放入指定目录（可在`main.py`中修改，默认`/root/AstrBot/imgs/default/`），用于随机发送功能。触发词为`随插`或`sc`，后接数字可指定发送张数（1~5），当然你把double塞进去也不会有什么问题。
+
+示例：
+```
+sc
+随插3
+sc506058858858
+展示鲁棒性随插用不了闲鱼上传更新了一下
+```
 
 4. 重启 AstrBot
 
 重启后插件即生效。
 
 ---
+
+## 随机插画压缩
+
+在配置界面选择是否`启用随机插画压缩`，默认关闭；
+
+设置`图像压缩目标边长`，将指定的边调整为该值（若它比目标值大的话），默认1080px；
+
+选择`压缩目标边长应用`，将目标边长应用于指定边：
+  - `height`应用于垂直长度
+  - `width`应用于水平长度
+  - `longest`应用于最长的方向长度
+  - `shortest`不存在，我懒炸了没搞，你可以自己改`main.py`
+
+注：gif不参与压缩（没错我孤立gif），压缩失败的图像会按原图发送
 
 ## 角色列表及别名
 
@@ -183,8 +208,8 @@ sia 兮娅
 
 ## 致谢
 
-· 本插件基于 [astrbot_plugin_arcaea](https://github.com/1-20182/astrbot_plugin_arcaea) 改写
-· 感谢 AinK [UID:589858398](https://b23.tv/gNS0F57) 绘制的兮娅 (Sia) [BV1MFg36uEor](https://b23.tv/jkSzLYJ) 很可爱
+- 本插件基于 [astrbot_plugin_arcaea](https://github.com/1-20182/astrbot_plugin_arcaea) 改写
+- 感谢 AinK [UID:589858398](https://b23.tv/gNS0F57) 绘制的兮娅 (Sia) [BV1MFg36uEor](https://b23.tv/jkSzLYJ) 很可爱
 
 ---
 
@@ -197,5 +222,5 @@ sia 兮娅
 
 以上大部分由AI生成，如有问题或建议，欢迎提交 Issue 或 Pull Request，不过 GitHub 基本不看，建议通过以下方式联系：
 
-· 邮箱：2824233866@qq.com
-· QQ (推荐)：2824233866
+- 邮箱：2824233866@qq.com
+- QQ (推荐)：2824233866

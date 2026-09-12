@@ -12,7 +12,7 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 from astrbot.api.message_components import Image, Plain, Node, Nodes
 
-@register("astrbot_plugin_arcaeaStickers", "犭查扌立", "Arcaea贴纸生成器", "0.0.2147483648")
+@register("astrbot_plugin_arcaeaStickers", "犭查扌立", "Arcaea贴纸生成器", "0.0.3.14159265")
 class ArcaeaStickerPlugin(Star):
 	HELP_TEXT = (
 		"def:/arc <id> [文]\n"
@@ -55,6 +55,8 @@ class ArcaeaStickerPlugin(Star):
 
 		self.excludes_files = {"1ASL.png"}
 
+		self.plugin_config = config or {}
+
 		self.character_defaults = self._load_character_defaults()
 
 		self.available_characters = self._scan_characters()
@@ -82,7 +84,18 @@ class ArcaeaStickerPlugin(Star):
 		self.illustration_dir = "/root/AstrBot/imgs/default/"
 		os.makedirs(self.illustration_dir, exist_ok=True)
 
+		logger.info(
+			f"图像压缩: {self._get_config('compress_ill', False)}, "
+			f"目标边长: {self._get_config('compress_target', 1080)}, "
+			f"应用方向: {self._get_config('target_towards', 'longest')}"
+		)
+
 		logger.info(f"Arcaea Sticker 插件 v4.2.1 加载，可用角色：{', '.join(self.available_characters)}")
+
+	def _get_config(self, key: str, default=None):
+		if key in self.plugin_config:
+			return self.plugin_config[key]
+		return default
 
 	def _load_character_defaults(self) -> dict:
 		defaults_path = os.path.join(os.path.dirname(__file__), "characters_defaults.json")
@@ -135,6 +148,74 @@ class ArcaeaStickerPlugin(Star):
 		chosen = random.choice(images)
 		return os.path.join(folder, chosen)
 
+	def _maybe_compress(self, img_path: str, temp_files: list) -> str:
+		if not self._get_config("compress_ill", False):
+			return img_path
+
+		ext = os.path.splitext(img_path)[1].lower()
+		if ext == ".gif":
+			return img_path
+
+		try:
+			target = int(self._get_config("compress_target", 1080))
+		except (ValueError, TypeError):
+			target = 1080
+
+		direction = self._get_config("target_towards", "longest")
+		if direction not in ("height", "width", "longest"):
+			direction = "longest"
+
+		try:
+			img = PILImage.open(img_path)
+			w, h = img.size
+
+			need_compress = False
+			if direction == "height" and h > target:
+				need_compress = True
+			elif direction == "width" and w > target:
+				need_compress = True
+			elif direction == "longest" and max(w, h) > target:
+				need_compress = True
+
+			if not need_compress:
+				return img_path
+
+			if direction == "height":
+				ratio = target / h
+				new_size = (int(w * ratio), target)
+			elif direction == "width":
+				ratio = target / w
+				new_size = (target, int(h * ratio))
+			else:
+				ratio = target / max(w, h)
+				new_size = (int(w * ratio), int(h * ratio))
+
+			img = img.resize(new_size, PILImage.LANCZOS)
+
+			if ext in (".jpg", ".jpeg"):
+				if img.mode in ("RGBA", "P"):
+					img = img.convert("RGB")
+				suffix, fmt = ".jpg", "JPEG"
+			elif ext == ".webp":
+				suffix, fmt = ".webp", "WEBP"
+			elif ext == ".bmp":
+				if img.mode in ("RGBA", "P"):
+					img = img.convert("RGB")
+				suffix, fmt = ".bmp", "BMP"
+			else:
+				suffix, fmt = ".png", "PNG"
+
+			with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+				img.save(f, format=fmt)
+				tmp_path = f.name
+
+			temp_files.append(tmp_path)
+			return tmp_path
+
+		except Exception as e:
+			logger.error(f"图像压缩失败: {img_path}, {e}")
+			return img_path
+
 	@filter.regex(r'.*')
 	async def on_any_message(self, event: AstrMessageEvent):
 		message_str = event.message_str.strip()
@@ -156,23 +237,30 @@ class ArcaeaStickerPlugin(Star):
 			yield event.plain_result("图库为空或不存在")
 			return
 
-		if num == 1:
-			chosen = random.choice(images)
-			img_path = os.path.join(self.illustration_dir, chosen)
-			yield event.chain_result([Image.fromFileSystem(img_path)])
-		else:
-			selected = random.sample(images, min(num, len(images)))
-			bot_name = event.get_sender_name() or "Etoile"
-			self_id = event.get_self_id() or "0"
-			nodes = []
-			for img_name in selected:
-				img_path = os.path.join(self.illustration_dir, img_name)
-				nodes.append(Node(
-					content=[Image.fromFileSystem(img_path)],
-					name=bot_name,
-					uin=self_id,
-				))
-			yield event.chain_result([Nodes(nodes)])
+		temp_files = []
+		try:
+			if num == 1:
+				chosen = random.choice(images)
+				img_path = os.path.join(self.illustration_dir, chosen)
+				final_path = self._maybe_compress(img_path, temp_files)
+				yield event.chain_result([Image.fromFileSystem(final_path)])
+			else:
+				selected = random.sample(images, min(num, len(images)))
+				bot_name = event.get_sender_name() or "Etoile"
+				self_id = event.get_self_id() or "0"
+				nodes = []
+				for img_name in selected:
+					img_path = os.path.join(self.illustration_dir, img_name)
+					final_path = self._maybe_compress(img_path, temp_files)
+					nodes.append(Node(
+						content=[Image.fromFileSystem(final_path)],
+						name=bot_name,
+						uin=self_id,
+					))
+				yield event.chain_result([Nodes(nodes)])
+		finally:
+			for path in temp_files:
+				threading.Timer(5.0, lambda p=path: os.remove(p) if os.path.exists(p) else None).start()
 		return
 
 	@filter.command("arc")

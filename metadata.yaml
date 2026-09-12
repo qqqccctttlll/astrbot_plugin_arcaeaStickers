@@ -2,7 +2,16 @@ name: astrbot_plugin_arcaeaStickers
 description: Arcaea贴纸生成器
 desc: Arcaea贴纸生成器
 help: /arc_help
-version: 0.0.2147483648
+version: 0.0.3.14159265
 author: 犭查扌立
 display_name: Arcaea贴纸生成器
 repo: https://github.com/qqqccctttlll/astrbot_plugin_arcaeaStickers
+category: entertainment
+tags:
+  - Arcaea
+  - stick
+  - 韵律源点
+  - 源神
+  - 贴纸
+  - 表情包
+  - 生成器
