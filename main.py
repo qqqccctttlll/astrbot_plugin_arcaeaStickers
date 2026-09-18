@@ -2,6 +2,7 @@ import os
 import random
 import re
 import json
+import math
 import tempfile
 import threading
 from PIL import Image as PILImage
@@ -12,14 +13,39 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 from astrbot.api.message_components import Image, Plain, Node, Nodes
 
-@register("astrbot_plugin_arcaeaStickers", "犭查扌立", "Arcaea贴纸生成器", "0.0.3141592653")
+@register("astrbot_plugin_arcaeaStickers", "犭查扌立", "Arcaea贴纸生成器", "0.√2")
 class ArcaeaStickerPlugin(Star):
+	GLOBAL_DEFAULTS = {
+		"text": "HEH!",
+		"font": "YurukaFangTang",
+		"color": "#FFFFFF",
+		"stroke": "#000000",
+		"stroke_size": 3,
+		"white": True,
+		"white_color": "#FFFFFF",
+		"white_size": 10,
+		"spacing": 0,
+		"x": 50,
+		"y": 70,
+		"rotate": 0,
+		"size": 45,
+		"curve": 0,
+		"radius": 100,
+		"distribution": False,
+		"png_bg": True,
+	}
+
 	HELP_TEXT = (
-		"def:/arc <id> [文]\n"
-		"adv:/arc <id> <文> <y> <x> <色> <描> <角> <siz> <led> <png> <cur> [色2] [描2]\n"
-		"$$$双色\n"
-		"__占位\n"
-		"/arc ayu C$$$B 77 50 __ __ 0 50 1 true __ #31C1B7 #3BE9DF"
+		"/arc <id> [文本] [png]\n"
+		"/arc info <id|default>\n"
+		"标签：[key=value,key=value]文本\n"
+		"颜色:color(填充) stroke(描边) stroke_size(描边宽度)\n"
+		"白边:white(开关) white_color(颜色) white_size(宽度)\n"
+		"位置:x(横%) y(纵%,从左下) rotate(旋转) size(字号) spacing(字间距)\n"
+		"曲线:curve(0~100,0直线,100整圆) radius(半径%,半径上限) distribution(均匀分布)\n"
+		"注：曲线模式圆心自动上移radius，使弧顶落在y位置\n"
+		"$$$分段, \\[ \\] 转义方括号，含空格段落用引号包裹\n"
+		"示例:/arc ayu '[font=YurukaFangTang,color=#31C1B7]C'$$$'[color=#3BE9DF,curve=50,x=50,y=25]B' true"
 	)
 
 	CHARACTER_ALIASES = {
@@ -63,23 +89,40 @@ class ArcaeaStickerPlugin(Star):
 		for eng in self.available_characters:
 			self.CHARACTER_ALIASES[eng] = eng
 
+		self.fonts = {}
 		self.fonts_dir = os.path.join(os.path.dirname(__file__), "fonts")
-		self.advanced_font_path = None
-		if os.path.exists(self.fonts_dir):
-			ttf_files = [f for f in os.listdir(self.fonts_dir) if f.lower().endswith('.ttf')]
-			if ttf_files:
-				self.advanced_font_path = os.path.join(self.fonts_dir, ttf_files[0])
-				logger.info(f"字体路径：{self.advanced_font_path}")
-			else:
-				logger.warning("fonts 文件夹中未找到 ttf 字体文件")
-		else:
-			logger.warning("fonts 文件夹不存在")
+		os.makedirs(self.fonts_dir, exist_ok=True)
+		for f in os.listdir(self.fonts_dir):
+			if f.lower().endswith(('.ttf', '.otf')):
+				name = os.path.splitext(f)[0]
+				self.fonts[name] = os.path.join(self.fonts_dir, f)
 
-		if not self.advanced_font_path:
+		if self.fonts:
+			logger.info(f"已加载字体: {', '.join(sorted(self.fonts.keys()))}")
+		else:
+			logger.warning("fonts 文件夹中未找到字体文件")
+
+		if "YurukaFangTang" in self.fonts:
+			self.default_font_name = "YurukaFangTang"
+		elif self.fonts:
+			self.default_font_name = sorted(self.fonts.keys())[0]
+			logger.warning(f"未找到 YurukaFangTang，默认字体改用 {self.default_font_name}")
+		else:
+			self.default_font_name = None
+			logger.warning("无可用字体，将回退到系统字体")
+
+		if self.default_font_name:
+			self.advanced_font_path = self.fonts[self.default_font_name]
+		else:
 			fallback = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 			if os.path.exists(fallback):
 				self.advanced_font_path = fallback
 				logger.info(f"使用系统字体：{self.advanced_font_path}")
+			else:
+				self.advanced_font_path = None
+				logger.error("未找到任何可用字体")
+
+		self._font_cache = {}
 
 		self.illustration_dir = "/root/AstrBot/imgs/default/"
 		os.makedirs(self.illustration_dir, exist_ok=True)
@@ -90,7 +133,7 @@ class ArcaeaStickerPlugin(Star):
 			f"应用方向: {self._get_config('target_towards', 'longest')}"
 		)
 
-		logger.info(f"Arcaea Sticker 插件 v4.2.1 加载，可用角色：{', '.join(self.available_characters)}")
+		logger.info(f"Arcaea Sticker 插件 v0.√2 加载，可用角色：{', '.join(self.available_characters)}")
 
 	def _get_config(self, key: str, default=None):
 		if key in self.plugin_config:
@@ -126,6 +169,21 @@ class ArcaeaStickerPlugin(Star):
 			if mapped in self.available_characters:
 				return mapped
 		return None
+
+	def _resolve_font_path(self, font_name) -> str | None:
+		if font_name and font_name in self.fonts:
+			return self.fonts[font_name]
+		if font_name and font_name != self.default_font_name:
+			logger.warning(f"未知字体: {font_name}，回退到 {self.default_font_name}")
+		return self.advanced_font_path
+
+	def _get_font(self, font_path, size):
+		key = (font_path, size)
+		font = self._font_cache.get(key)
+		if font is None:
+			font = ImageFont.truetype(font_path, size)
+			self._font_cache[key] = font
+		return font
 
 	def _list_characters(self) -> str:
 		cn_map = {}
@@ -287,6 +345,46 @@ class ArcaeaStickerPlugin(Star):
 			event.stop_event()
 			return
 
+		if parts[1].lower() == "info":
+			if len(parts) < 3:
+				yield event.plain_result("用法：/arc info <char> 或 /arc info default")
+				event.stop_event()
+				return
+
+			target = parts[2].strip()
+
+			if target.lower() == "default":
+				display = dict(self.GLOBAL_DEFAULTS)
+				lines = ["全局默认配置："]
+				for k in sorted(display.keys()):
+					lines.append(f"  {k} = {display[k]}")
+				yield event.plain_result("\n".join(lines))
+				event.stop_event()
+				return
+
+			character = self._resolve_character(target)
+			if character is None:
+				yield event.plain_result(
+					f"未知角色：{target}。可用 /arc list 查看角色列表"
+				)
+				event.stop_event()
+				return
+
+			role_config = self.character_defaults.get(character, {})
+
+			if not role_config:
+				yield event.plain_result(f"角色 {character} 未配置任何默认项，全部使用全局默认")
+				event.stop_event()
+				return
+
+			lines = [f"{character}:"]
+			for k in sorted(role_config.keys()):
+				lines.append(f"  {k} = {role_config[k]!r}")
+
+			yield event.plain_result("\n".join(lines))
+			event.stop_event()
+			return
+
 		raw_character = parts[1]
 		character = self._resolve_character(raw_character)
 		if character is None:
@@ -299,117 +397,26 @@ class ArcaeaStickerPlugin(Star):
 
 		role_config = self.character_defaults.get(character, {})
 
-		if len(parts) >= 11:
-			try:
-				raw_text = parts[2]
-				text = raw_text.replace('\\n', '\n') if raw_text != "__" else role_config.get("text", "HEH!")
-				if raw_text == "__" and not text:
-					raise ValueError("无默认文本")
-
-				raw_height = parts[3]
-				height = int(raw_height) if raw_height != "__" else role_config.get("y", 70)
-
-				raw_width = parts[4]
-				width = int(raw_width) if raw_width != "__" else role_config.get("x", 50)
-
-				raw_color = parts[5]
-				color = raw_color if raw_color != "__" else role_config.get("color", "#FFFFFF")
-
-				raw_color0 = parts[6]
-				color0 = raw_color0 if raw_color0 != "__" else role_config.get("color0", "#000000")
-
-				raw_rotate = parts[7]
-				rotate = float(raw_rotate) if raw_rotate != "__" else role_config.get("rotation", 0)
-
-				raw_point = parts[8]
-				point = int(raw_point) if raw_point != "__" else role_config.get("font_size", 45)
-
-				raw_leading = parts[9]
-				leading = int(raw_leading) if raw_leading != "__" else role_config.get("leading", 5)
-
-				raw_png_bg = parts[10]
-				if raw_png_bg != "__":
-					png_bg = raw_png_bg.lower() == "true"
-				else:
-					png_bg = role_config.get("png_bg", True)
-
-				raw_curve = parts[11]
-				if raw_curve != "__":
-					curve = raw_curve.lower() == "true"
-				else:
-					curve = role_config.get("curve", False)
-
-				color1 = parts[12] if len(parts) > 12 and parts[12] != "__" else role_config.get("color1", "#FF0000")
-				color2 = parts[13] if len(parts) > 13 and parts[13] != "__" else role_config.get("color2", "#0000FF")
-
-			except (ValueError, IndexError) as e:
-				yield event.plain_result(f"高级模式参数解析错误: {e}\n请检查参数数量和类型。")
-				event.stop_event()
-				return
-
-			try:
-				img = self._generate_advanced_sticker(
-					character=character,
-					text=text,
-					height=height,
-					width=width,
-					color=color,
-					color0=color0,
-					rotate=rotate,
-					point=point,
-					leading=leading,
-					png_bg=png_bg,
-					curve=curve,
-					color1=color1,
-					color2=color2
-				)
-				with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as f:
-					img.save(f, format='PNG')
-					f_path = f.name
-				yield event.chain_result([Image.fromFileSystem(f_path)])
-				threading.Timer(5.0, lambda: os.remove(f_path) if os.path.exists(f_path) else None).start()
-			except Exception as e:
-				logger.exception("高级模式生成失败")
-				yield event.plain_result(f"生成失败：{str(e)}")
-			event.stop_event()
-			return
-
 		if len(parts) > 2:
 			text = parts[2].replace('\\n', '\n').strip()
 		else:
-			text = role_config.get("text", "HEH!")
+			text = role_config.get("text", self.GLOBAL_DEFAULTS["text"])
 		if not text:
 			yield event.plain_result("无默认文本")
 			event.stop_event()
 			return
 
-		height = role_config.get("y", 70)
-		width = role_config.get("x", 50)
-		color = role_config.get("color", "#FFFFFF")
-		color0 = role_config.get("color0", "#000000")
-		rotate = role_config.get("rotation", 0)
-		point = role_config.get("font_size", 45)
-		leading = role_config.get("leading", 5)
-		png_bg = role_config.get("png_bg", True)
-		curve = role_config.get("curve", False)
-		color1 = role_config.get("color1", "#FF0000")
-		color2 = role_config.get("color2", "#0000FF")
+		if len(parts) > 3:
+			png_bg = parts[3].lower() == "true"
+		else:
+			png_bg = role_config.get("png_bg", self.GLOBAL_DEFAULTS["png_bg"])
 
 		try:
-			img = self._generate_advanced_sticker(
+			img = self._generate_sticker(
 				character=character,
 				text=text,
-				height=height,
-				width=width,
-				color=color,
-				color0=color0,
-				rotate=rotate,
-				point=point,
-				leading=leading,
 				png_bg=png_bg,
-				curve=curve,
-				color1=color1,
-				color2=color2
+				role_config=role_config,
 			)
 			with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as f:
 				img.save(f, format='PNG')
@@ -417,7 +424,7 @@ class ArcaeaStickerPlugin(Star):
 			yield event.chain_result([Image.fromFileSystem(f_path)])
 			threading.Timer(5.0, lambda: os.remove(f_path) if os.path.exists(f_path) else None).start()
 		except Exception as e:
-			logger.exception("默认模式生成失败")
+			logger.exception("生成失败")
 			yield event.plain_result(f"生成失败：{str(e)}")
 		event.stop_event()
 
@@ -445,18 +452,344 @@ class ArcaeaStickerPlugin(Star):
 			parts.append(''.join(current))
 		return parts
 
-	def _generate_advanced_sticker(self, character: str, text: str, height: int, width: int,
-		color: str, color0: str, rotate: float, point: int,
-		leading: int, png_bg: bool, curve: bool,
-		color1: str = None, color2: str = None) -> PILImage.Image:
-		CANVAS_SIZE = (800, 800)
-		SCALE = CANVAS_SIZE[0] / 296
+	def _parse_attr_str(self, s: str) -> dict:
+		attrs = {}
+		for pair in s.split(","):
+			pair = pair.strip()
+			if not pair or "=" not in pair:
+				continue
+			key, value = pair.split("=", 1)
+			key = key.strip().lower()
+			value = value.strip()
+			if not key:
+				continue
+			try:
+				if key == "rotate":
+					attrs[key] = float(value)
+				elif key in ("curve", "radius"):
+					try:
+						attrs[key] = float(value)
+					except ValueError:
+						if key == "curve":
+							attrs[key] = 100.0 if value.lower() == "true" else 0.0
+						else:
+							attrs[key] = 100.0
+				elif key in ("x", "y", "size", "white_size", "stroke_size", "spacing"):
+					attrs[key] = int(float(value))
+				elif key in ("white", "distribution"):
+					attrs[key] = value.lower() == "true"
+				else:
+					attrs[key] = value
+			except ValueError:
+				continue
+		return attrs
 
-		center_x = int(CANVAS_SIZE[0] * width / 100)
-		center_y = int(CANVAS_SIZE[1] * (100 - height) / 100)
+	def _parse_text_to_segments(self, raw_text: str, base_defaults: dict) -> list:
+		PLACEHOLDER_L = "\x00L\x00"
+		PLACEHOLDER_R = "\x00R\x00"
 
-		point_scaled = int(point * SCALE)
-		leading_scaled = int(leading * SCALE)
+		escaped = raw_text.replace("\\[", PLACEHOLDER_L).replace("\\]", PLACEHOLDER_R)
+
+		parts = escaped.split("$$$")
+
+		segments = []
+		for part in parts:
+			part = part.strip()
+			if not part:
+				continue
+
+			attrs = {}
+			text = part
+
+			if part.startswith("["):
+				end = part.find("]")
+				if end != -1:
+					attr_content = part[1:end]
+					if "=" in attr_content:
+						attrs = self._parse_attr_str(attr_content)
+						text = part[end+1:]
+
+			text = text.replace(PLACEHOLDER_L, "[").replace(PLACEHOLDER_R, "]")
+
+			merged = base_defaults.copy()
+			merged.update(attrs)
+
+			segments.append({"text": text, "attrs": merged})
+
+		return segments
+
+	def _parse_color(self, c):
+		if c is None:
+			return None
+		if isinstance(c, tuple):
+			return c
+		try:
+			if c.startswith("#"):
+				h = c[1:]
+				if len(h) == 8:
+					return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), int(h[6:8], 16))
+				elif len(h) == 6:
+					return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), 255)
+				elif len(h) == 3:
+					return (int(h[0]*2, 16), int(h[1]*2, 16), int(h[2]*2, 16), 255)
+			return ImageColor.getrgb(c) + (255,)
+		except Exception:
+			return (255, 255, 255, 255)
+
+	def _harden_layer(self, layer, color):
+		r, g, b, a = layer.split()
+		a = a.point(lambda p: 255 if p > 0 else 0)
+		solid = PILImage.new("RGBA", layer.size, color)
+		solid.putalpha(a)
+		return solid
+
+	def _render_white_char(self, char, font, white_w, white_color, rotate_deg=0):
+		try:
+			bbox = font.getbbox(char)
+		except Exception:
+			bbox = (0, 0, font.size, font.size)
+
+		left, top, right, bottom = bbox
+		char_w = max(1, right - left)
+		char_h = max(1, bottom - top)
+
+		margin = white_w + 4
+		w = char_w + margin * 2
+		h = char_h + margin * 2
+
+		if w * h > 100_000_000:
+			logger.warning(f"白边图层尺寸异常: {w}x{h}，跳过 {char!r}")
+			return PILImage.new("RGBA", (1, 1), (0, 0, 0, 0))
+
+		layer = PILImage.new("RGBA", (w, h), (0, 0, 0, 0))
+		draw = ImageDraw.Draw(layer)
+		x = margin - left
+		y = margin - top
+
+		draw.text((x, y), char, font=font, fill=white_color,
+				  stroke_width=white_w, stroke_fill=white_color)
+
+		if rotate_deg != 0:
+			layer = layer.rotate(rotate_deg, resample=PILImage.BICUBIC, expand=True)
+
+		return self._harden_layer(layer, white_color)
+
+	def _render_main_char(self, char, font, fill, stroke, stroke_w, rotate_deg=0):
+		try:
+			bbox = font.getbbox(char)
+		except Exception:
+			bbox = (0, 0, font.size, font.size)
+
+		left, top, right, bottom = bbox
+		char_w = max(1, right - left)
+		char_h = max(1, bottom - top)
+
+		margin = stroke_w + 4
+		w = char_w + margin * 2
+		h = char_h + margin * 2
+
+		if w * h > 100_000_000:
+			logger.warning(f"字符图层尺寸异常: {w}x{h}，跳过 {char!r}")
+			return PILImage.new("RGBA", (1, 1), (0, 0, 0, 0))
+
+		layer = PILImage.new("RGBA", (w, h), (0, 0, 0, 0))
+		draw = ImageDraw.Draw(layer)
+
+		x = margin - left
+		y = margin - top
+
+		if stroke and stroke_w > 0:
+			draw.text((x, y), char, font=font, fill=fill,
+					  stroke_width=stroke_w, stroke_fill=stroke)
+		else:
+			draw.text((x, y), char, font=font, fill=fill)
+
+		if rotate_deg != 0:
+			layer = layer.rotate(rotate_deg, resample=PILImage.BICUBIC, expand=True)
+
+		return layer
+
+	def _layout_straight(self, text, font, cx, cy, base_rotate, spacing):
+		n = len(text)
+		if n == 0:
+			return []
+
+		widths = []
+		total_w = 0
+		for char in text:
+			bbox = font.getbbox(char)
+			w = bbox[2] - bbox[0]
+			widths.append(w)
+			total_w += w
+		total_w += spacing * (n - 1)
+
+		base_rot_rad = math.radians(base_rotate)
+		cos_br = math.cos(base_rot_rad)
+		sin_br = math.sin(base_rot_rad)
+
+		x_accum = -total_w / 2
+		items = []
+
+		for i, char in enumerate(text):
+			rel_x = x_accum + widths[i] / 2
+			rel_y = 0
+
+			rot_x = rel_x * cos_br + rel_y * sin_br
+			rot_y = -rel_x * sin_br + rel_y * cos_br
+
+			items.append((char, cx + rot_x, cy + rot_y, base_rotate))
+			x_accum += widths[i] + spacing
+
+		return items
+
+	def _layout_curve(self, text, font, cx, cy, radius_px, curve_percent, distribution,
+					  spacing, base_rotate):
+		n = len(text)
+		if n == 0 or radius_px <= 0:
+			return []
+
+		if curve_percent <= 0:
+			return []
+		if curve_percent > 100:
+			curve_percent = 100
+
+		char_widths = [max(1, font.getbbox(c)[2] - font.getbbox(c)[0]) for c in text]
+
+		base_rot_rad = math.radians(base_rotate)
+		cos_br = math.cos(base_rot_rad)
+		sin_br = math.sin(base_rot_rad)
+
+		if distribution:
+			total_angle = 2 * math.pi * (curve_percent / 100)
+			angle_per_char = total_angle / n
+			start_angle = math.pi / 2 + total_angle / 2
+			thetas = [start_angle - (i + 0.5) * angle_per_char for i in range(n)]
+		else:
+			char_angles = [w / radius_px for w in char_widths]
+			spacing_angle = spacing / radius_px if n > 1 else 0.0
+			total_angle = sum(char_angles) + spacing_angle * (n - 1)
+			start_angle = math.pi / 2 + total_angle / 2
+
+			thetas = []
+			current = start_angle
+			for i, angle in enumerate(char_angles):
+				thetas.append(current - angle / 2)
+				current -= angle
+				if i < n - 1:
+					current -= spacing_angle
+
+		items = []
+		for i, char in enumerate(text):
+			theta = thetas[i]
+
+			dx = radius_px * math.cos(theta)
+			dy = -radius_px * math.sin(theta)
+
+			rot_dx = dx * cos_br + dy * sin_br
+			rot_dy = -dx * sin_br + dy * cos_br
+
+			rotate_deg = math.degrees(theta) - 90 + base_rotate
+			items.append((char, cx + rot_dx, cy + rot_dy, rotate_deg))
+
+		return items
+
+	def _prepare_segment(self, text, attrs, canvas_size):
+		if not text:
+			return None
+
+		font_name = attrs.get("font") or self.default_font_name
+		font_path = self._resolve_font_path(font_name)
+		if not font_path or not os.path.exists(font_path):
+			logger.error(f"字体不可用: {font_name}")
+			return None
+
+		point_scaled = max(1, int(attrs.get("size", 45) * (canvas_size[0] / 296)))
+
+		try:
+			font = self._get_font(font_path, point_scaled)
+		except Exception as e:
+			logger.error(f"加载字体失败 {font_path}: {e}")
+			return None
+
+		fill = self._parse_color(attrs.get("color", "#FFFFFF"))
+		stroke_c = attrs.get("stroke")
+		stroke = self._parse_color(stroke_c) if stroke_c else None
+
+		white_enabled = bool(attrs.get("white", True))
+		white_color = self._parse_color(attrs.get("white_color", "#FFFFFF"))
+		white_size = float(attrs.get("white_size", 10))
+		white_w = int(white_size * canvas_size[0] / 296) if white_enabled and white_size > 0 else 0
+
+		stroke_size = float(attrs.get("stroke_size", 3))
+		stroke_w = int(stroke_size * canvas_size[0] / 296) if stroke_size > 0 else 0
+
+		spacing = int(float(attrs.get("spacing", 0)) * canvas_size[0] / 296)
+
+		x_val = float(attrs.get("x", 50))
+		y_val = float(attrs.get("y", 50))
+		cx = int(canvas_size[0] * x_val / 100)
+		base_rotate = float(attrs.get("rotate", 0))
+
+		try:
+			curve_pct = float(attrs.get("curve", 0))
+		except (ValueError, TypeError):
+			curve_pct = 0
+
+		if curve_pct > 0:
+			radius_pct = float(attrs.get("radius", 100))
+			user_radius_px = radius_pct / 100 * canvas_size[0]
+
+			char_widths = [max(1, font.getbbox(c)[2] - font.getbbox(c)[0]) for c in text]
+			total_w = sum(char_widths) + spacing * (len(text) - 1) if text else 0
+
+			fraction = min(curve_pct, 100) / 100
+			if fraction > 0 and total_w > 0:
+				auto_radius = total_w / (2 * math.pi * fraction)
+			else:
+				auto_radius = user_radius_px
+
+			effective_radius = min(user_radius_px, auto_radius)
+
+			y_offset_pct = effective_radius / canvas_size[1] * 100
+			y_center_pct = y_val - y_offset_pct
+			cy_center = int(canvas_size[1] * (100 - y_center_pct) / 100)
+
+			items = self._layout_curve(
+				text, font, cx, cy_center, effective_radius, curve_pct,
+				bool(attrs.get("distribution", False)), spacing, base_rotate
+			)
+		else:
+			cy = int(canvas_size[1] * (100 - y_val) / 100)
+			items = self._layout_straight(text, font, cx, cy, base_rotate, spacing)
+
+		if not items:
+			return None
+
+		return items, font, fill, stroke, white_w, white_color, stroke_w
+
+	def _render_prepared(self, white_layer, main_layer, prepared):
+		items, font, fill, stroke, white_w, white_color, stroke_w = prepared
+
+		for char, cx, cy, rotate_deg in items:
+			if white_w > 0:
+				char_layer = self._render_white_char(char, font, white_w, white_color, rotate_deg)
+				w, h = char_layer.size
+				white_layer.paste(char_layer, (int(cx - w / 2), int(cy - h / 2)), char_layer)
+
+			char_layer = self._render_main_char(char, font, fill, stroke, stroke_w, rotate_deg)
+			w, h = char_layer.size
+			main_layer.paste(char_layer, (int(cx - w / 2), int(cy - h / 2)), char_layer)
+
+	def _generate_sticker(self, character: str, text: str, png_bg: bool,
+						  role_config: dict) -> PILImage.Image:
+		FINAL_SIZE = (800, 800)
+		SSAA = 2
+		CANVAS_SIZE = (FINAL_SIZE[0] * SSAA, FINAL_SIZE[1] * SSAA)
+
+		base_defaults = dict(self.GLOBAL_DEFAULTS)
+		base_defaults.pop("png_bg", None)
+		base_defaults.pop("text", None)
+		base_defaults.update({k: v for k, v in role_config.items() if k not in ("png_bg", "text")})
 
 		char_path = os.path.join(self.resource_dir, f"{character.lower()}.png")
 		if not os.path.exists(char_path):
@@ -471,106 +804,24 @@ class ArcaeaStickerPlugin(Star):
 		canvas.paste(char_img, (0, 0), char_img)
 
 		if text:
-			txt_layer = PILImage.new("RGBA", CANVAS_SIZE, (0, 0, 0, 0))
-			draw = ImageDraw.Draw(txt_layer)
+			segments = self._parse_text_to_segments(text, base_defaults)
 
-			font_path = self.advanced_font_path
-			if not font_path or not os.path.exists(font_path):
-				fallback = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-				if os.path.exists(fallback):
-					font_path = fallback
-				else:
-					raise FileNotFoundError("未找到可用字体")
-			font = ImageFont.truetype(font_path, point_scaled)
+			white_layer = PILImage.new("RGBA", CANVAS_SIZE, (0, 0, 0, 0))
+			main_layer = PILImage.new("RGBA", CANVAS_SIZE, (0, 0, 0, 0))
 
-			def parse_color(c):
-				if c is None:
-					return None
-				if c.startswith('#'):
-					return tuple(int(c[i:i+2], 16) for i in (1, 3, 5)) + (255,)
-				else:
-					return ImageColor.getrgb(c) + (255,)
+			for seg in segments:
+				try:
+					prepared = self._prepare_segment(seg["text"], seg["attrs"], CANVAS_SIZE)
+					if prepared:
+						self._render_prepared(white_layer, main_layer, prepared)
+				except Exception as e:
+					logger.exception(f"渲染段落失败: {seg['text']!r}, {e}")
 
-			multi_color = False
-			segments = []
-			if color1 is not None and color2 is not None and '$$$' in text and '\n' not in text:
-				parts = text.split('$$$')
-				if len(parts) == 2:
-					multi_color = True
-					segments = [(parts[0], color, color0), (parts[1], color1, color2)]
+			canvas.alpha_composite(white_layer)
+			canvas.alpha_composite(main_layer)
 
-			stroke_width = int(3 * SCALE)
-			white_stroke_width = int(10 * SCALE)
-
-			if multi_color:
-				widths = []
-				for seg, _, _ in segments:
-					bbox = font.getbbox(seg)
-					widths.append(bbox[2] - bbox[0])
-				total_width = sum(widths)
-				start_x = center_x - total_width // 2
-				first_bbox = font.getbbox(segments[0][0])
-				line_height = first_bbox[3] - first_bbox[1]
-				y = center_y - line_height // 2
-
-				if white_stroke_width > 0:
-					current_x = start_x
-					for seg, _, _ in segments:
-						draw.text((current_x, y), seg, font=font, fill=None,
-								  stroke_width=white_stroke_width, stroke_fill="white")
-						bbox = font.getbbox(seg)
-						current_x += bbox[2] - bbox[0]
-
-				current_x = start_x
-				for seg, fill, stroke in segments:
-					fill_color = parse_color(fill)
-					stroke_color = parse_color(stroke)
-					if stroke_color:
-						draw.text((current_x, y), seg, font=font, fill=fill_color,
-								  stroke_width=stroke_width, stroke_fill=stroke_color)
-					else:
-						draw.text((current_x, y), seg, font=font, fill=fill_color)
-					bbox = font.getbbox(seg)
-					current_x += bbox[2] - bbox[0]
-			else:
-				lines = text.split('\n')
-				line_heights = [font.getbbox(line)[3] - font.getbbox(line)[1] for line in lines]
-				total_height = sum(line_heights) + leading_scaled * (len(lines) - 1)
-				y = center_y - total_height // 2
-
-				if white_stroke_width > 0:
-					y_temp = y
-					for idx, line in enumerate(lines):
-						bbox = font.getbbox(line)
-						line_width = bbox[2] - bbox[0]
-						x = center_x - line_width // 2
-						draw.text((x, y_temp), line, font=font, fill=None,
-								  stroke_width=white_stroke_width, stroke_fill="white")
-						y_temp += line_heights[idx] + leading_scaled
-
-				y = center_y - total_height // 2
-				for idx, line in enumerate(lines):
-					bbox = font.getbbox(line)
-					line_width = bbox[2] - bbox[0]
-					x = center_x - line_width // 2
-					fill_color = parse_color(color)
-					stroke_color = parse_color(color0)
-					if stroke_color:
-						draw.text((x, y), line, font=font, fill=fill_color,
-								  stroke_width=stroke_width, stroke_fill=stroke_color)
-					else:
-						draw.text((x, y), line, font=font, fill=fill_color)
-					y += line_heights[idx] + leading_scaled
-
-			if rotate != 0:
-				rotated = txt_layer.rotate(rotate, expand=True, resample=PILImage.BICUBIC)
-				offset_x = (rotated.width - CANVAS_SIZE[0]) // 2
-				offset_y = (rotated.height - CANVAS_SIZE[1]) // 2
-				final_txt = PILImage.new("RGBA", CANVAS_SIZE, (0, 0, 0, 0))
-				final_txt.paste(rotated, (-offset_x, -offset_y), rotated)
-				txt_layer = final_txt
-
-			canvas = PILImage.alpha_composite(canvas, txt_layer)
+		if SSAA > 1:
+			canvas = canvas.resize(FINAL_SIZE, PILImage.LANCZOS)
 
 		return canvas
 

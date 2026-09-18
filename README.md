@@ -1,10 +1,10 @@
 # Arcaea 贴纸生成器
 
-[![AstrBot](https://img.shields.io/badge/AstrBot-插件-green.svg)](https://github.com/Soulter/AstrBot) [![Version](https://img.shields.io/badge/Version-0.0.3141592653-blue)]()
+[![AstrBot](https://img.shields.io/badge/AstrBot-插件-green.svg)](https://github.com/Soulter/AstrBot) [![Version](https://img.shields.io/badge/Version-0.√2-blue)]()
 
 本插件是 [astrbot_plugin_arcaea](https://github.com/1-20182/astrbot_plugin_arcaea) 的修改版。
 
-逐字渲染前最后一版不改了，再改我是pig。
+注意：该版本的性能消耗是0.0.π的数十乃至十数倍！涉及逐字渲染与SSAA处理，酌情更新！
 
 ---
 
@@ -106,53 +106,83 @@ sia 兮娅
 
 ### 命令列表
 
-```
-命令格式 说明
-/arc 发送帮助信息、角色列表文字和列表图片
-/arc help 同上
-/arc <角色> [文字] 默认模式：使用角色默认参数生成贴纸，文字可选
-/arc <角色> <文字> <高度> <宽度> <颜色> <描边> <旋转> <字号> <行距> <透明> <曲线> [颜色2] [描边2] 高级模式：全参数自定义
-```
+`/arc`或`/arc help`发送帮助信息、角色列表文字和列表图片
+`/arc info default`查看全局默认配置
+`/arc info <角色>`查看该角色在`characters_defaults.json`中显式配置的项
+`/arc <角色> [文本] [png]`生成贴纸
 
-#### 高级模式参数详解
+#### 段落语法
 
-参数顺序必须严格遵循，可使用 __（两个下划线）占位表示使用该参数的默认值（角色默认配置或全局默认值）。
+文本由 $$$ 分段，每段可加前缀 [key=value,key=value,...] 指定该段样式。无前缀的段落使用角色默认配置。
 
 ```
-位置 参数名 类型 说明
-1 角色 string 角色英文名或中文别名
-2 文字 string 要显示的文字，使用 $$$ 分隔两段可分别指定颜色（仅单行有效）
-3 高度 (y) int 文字垂直位置，百分比（0~100，从底部开始）
-4 宽度 (x) int 文字水平位置，百分比（0~100，从左侧开始）
-5 颜色 string 文字主颜色（如 #FFFFFF 或 white）
-6 描边 string 文字描边颜色（同上）
-7 旋转 float 文字旋转角度（度）
-8 字号 int 字体大小（像素，会按画布缩放）
-9 行距 int 多行文字的行间距（像素，会缩放）
-10 透明 bool true 或 false，是否使用透明背景（保留角色图片透明区域）
-11 曲线 bool （未实现，占位）
-12 颜色2 string 第二段文字的主颜色（可选）
-13 描边2 string 第二段文字的描边颜色（可选）
+/arc ayu '[color=#31C1B7]C'$$$'[color=#3BE9DF,curve=50,x=50,y=25]B' true
 ```
+
+· $$$：段落分隔符，各段独立布局
+· [key=value,...]：段落属性前缀，放在段落文本最前面
+· \[ \]：转义方括号，用于在文本里显示字面的 [ ]
+· 含空格段落用引号包裹：'[color=#F00]红 色'
+· 各属性顺序无关，未写的属性继承角色默认/全局默认
+
+#### 段落属性一览
+
+```
+键 类型 默认 说明
+font string YurukaFangTang 字体名，对应 fonts/ 中的文件名
+color string #FFFFFF 文字填充色，支持 #RRGGBB / #RRGGBBAA
+stroke string #000000 文字描边色
+stroke_size int 3 描边宽度
+white bool true 是否绘制白边
+white_color string #FFFFFF 白边颜色
+white_size int 10 白边宽度
+spacing int 0 字间距
+x int 50 段落水平位置，画布宽度百分比
+y int 70 段落垂直位置，画布高度百分比（从左下角起）
+rotate float 0 段落旋转角度（度，逆时针）
+size int 45 字号
+curve float 0 曲率：0 直排，100 整圆
+radius float 100 曲线半径上限（画布宽度百分比）
+distribution bool false 曲线模式下是否均匀分布字符角度
+```
+
+#### 曲线模式说明
+
+· curve 决定文字在弧上占用的角度：curve=100 表示占满整圆，curve=50 表示半圆
+· radius 是半径上限，实际半径取 min(radius, auto_radius)，auto_radius 由文字总宽自动算出，保证恰好绕出 curve 指定的角度
+· 圆心位置自动上移 radius，使弧顶落在指定的 y 位置
+· distribution=true 时字符均分弧段，false 时按字符宽度分配角度，字距自然
 
 #### 示例
 
-默认模式：
+单段：
 
 ```
-/arc 光 你好！
+/arc 光 我是对立
 ```
 
-高级模式：
+多段多色：
 
 ```
-/arc hikari "Hello!" 50 50 #FFD700 #000000 0 60 10 true false
+/arc ayu '[color=#31C1B7]C'$$$'[color=#3BE9DF]B'
 ```
 
-双色文字：
+曲线：
 
 ```
-/arc shirahime "喜$$$欢" 77 50 #C3D5FF #697EE8 0 50 10 true false #F9C2CB #F74462
+/arc 光 '[curve=50,x=50,y=60]半圆排列'
+```
+
+整圆均分：
+
+```
+/arc 光 '[curve=100,distribution=true,size=35]整圆均分排列'
+```
+
+倾斜多行（字号 10、旋转 15°、行距 5%）：
+
+```
+/arc ayu '[rotate=15,size=10,stroke_size=2,x=42.2,y=80]第一行'$$$'[rotate=15,size=10,stroke_size=2,x=43.5,y=75.2]第二行'$$$'[rotate=15,size=10,stroke_size=2,x=44.8,y=70.4]第三行'
 ```
 
 ---

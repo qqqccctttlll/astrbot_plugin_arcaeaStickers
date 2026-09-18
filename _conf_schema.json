@@ -1,22 +1,22 @@
 {
-  "compress_ill": {
-    "description": "启用随插图像压缩",
-    "type": "bool",
-    "default": false
-  },
-  "compress_target": {
-    "description": "图像压缩目标边长",
-    "type": "int",
-    "default": 1080
-  },
-  "target_towards": {
-    "description": "压缩目标边长应用",
-    "type": "string",
-    "options": [
-      "height",
-      "width",
-      "longest"
-    ],
-    "default": "longest"
-  }
+	"compress_ill": {
+		"description": "启用随插图像压缩",
+		"type": "bool",
+		"default": false
+	},
+	"compress_target": {
+		"description": "图像压缩目标边长",
+		"type": "int",
+		"default": 1080
+	},
+	"target_towards": {
+		"description": "压缩目标边长应用",
+		"type": "string",
+		"options": [
+			"height",
+			"width",
+			"longest"
+		],
+		"default": "longest"
+	}
 }
