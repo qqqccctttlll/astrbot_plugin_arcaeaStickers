@@ -1,4 +1,9 @@
 {
+	"new_render": {
+		"description": "启用高消耗渲染器",
+		"type": "bool",
+		"default": false
+	},
 	"compress_ill": {
 		"description": "启用随插图像压缩",
 		"type": "bool",

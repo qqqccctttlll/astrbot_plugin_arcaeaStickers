@@ -4,7 +4,7 @@
 
 本插件是 [astrbot_plugin_arcaea](https://github.com/1-20182/astrbot_plugin_arcaea) 的修改版。
 
-注意：该版本的性能消耗是0.0.π的数十乃至十数倍！涉及逐字渲染与SSAA处理，酌情更新！
+注意：多段与曲线需要启用`启用高消耗渲染器`选项，其性能消耗是旧渲染器的数十乃至十数倍！涉及逐字渲染与SSAA处理，酌情启用！
 
 ---
 
@@ -37,7 +37,7 @@ pip install Pillow
 
 字体：将 .ttf 字体文件放入 fonts 目录（插件会自动使用第一个找到的字体）。若无字体，插件将尝试使用系统字体`/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`。
 
-随机图库：将图片（.png/.jpg/.jpeg/.gif/.bmp）放入指定目录（可在`main.py`中修改，默认`/root/AstrBot/imgs/default/`），用于随机发送功能。触发词为`随插`或`sc`，后接数字可指定发送张数（1~5），当然你把double塞进去也不会有什么问题。
+随机图库：将图片（.png/.jpg/.jpeg/.gif/.bmp）放入指定目录（可在`main.py`中修改，向上三级，默认`AstrBot/imgs/default/`），用于随机发送功能。触发词为`随插`或`sc`，后接数字可指定发送张数（1~5），当然你把double塞进去也不会有什么问题。
 
 示例：
 ```
@@ -183,6 +183,12 @@ distribution bool false 曲线模式下是否均匀分布字符角度
 
 ```
 /arc ayu '[rotate=15,size=10,stroke_size=2,x=42.2,y=80]第一行'$$$'[rotate=15,size=10,stroke_size=2,x=43.5,y=75.2]第二行'$$$'[rotate=15,size=10,stroke_size=2,x=44.8,y=70.4]第三行'
+```
+
+旧渲染器：
+
+```
+/arc shirahime [color=#fac,spacing=2]你\n好
 ```
 
 ---
