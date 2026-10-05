@@ -1,17 +1,12 @@
-import json
-import os
-
 from astrbot.api import logger
 
 from . import get_config
 
 def save_config(plugin) -> tuple[bool, str | None]:
 	try:
-		os.makedirs(os.path.dirname(plugin.config_path), exist_ok=True)
-		with open(plugin.config_path, "w", encoding="utf-8") as f:
-			json.dump(plugin.plugin_config, f, ensure_ascii=False, indent=2)
+		plugin.plugin_config.save_config()
 		return True, None
-	except OSError as e:
+	except Exception as e:
 		return False, str(e)
 
 def coerce_value(raw, old):

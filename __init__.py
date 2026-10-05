@@ -23,12 +23,7 @@ def init_plugin(plugin, context, config):
 	for d in (plugin.resource_dir, plugin.fonts_dir, plugin.illustration_dir):
 		os.makedirs(d, exist_ok=True)
 
-	plugin.data_dir = data_dir
-	plugin.config_path = os.path.join(
-		data_dir, "config",
-		"astrbot_plugin_arcaeaStickers_config.json",
-	)
-	logger.info(f"配置路径: {plugin.config_path}")
+	logger.info(f"配置路径: {getattr(plugin.plugin_config, 'config_path', '<未知>')}")
 
 	_setup_characters(plugin)
 	_setup_fonts(plugin)
