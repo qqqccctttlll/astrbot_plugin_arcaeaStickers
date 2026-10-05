@@ -1,8 +1,8 @@
 name: astrbot_plugin_arcaeaStickers
 description: Arcaea贴纸生成器
-desc: Arcaea贴纸生成器
+desc: 可以快速生成类官方贴纸效果的png图像，受限于pil效果一般。
 help: /arc_help
-version: 0.1.414213562
+version: 0.1.732050807
 author: 犭查扌立
 display_name: Arcaea贴纸生成器
 repo: https://github.com/qqqccctttlll/astrbot_plugin_arcaeaStickers

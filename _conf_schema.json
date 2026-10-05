@@ -1,8 +1,23 @@
 {
+  "output_size": {
+		"description": "贴纸图像输出尺寸",
+		"type": "int",
+		"default": 800,
+		"hint": "有效范围64~800整数"
+	},
 	"new_render": {
 		"description": "启用高消耗渲染器",
 		"type": "bool",
 		"default": false
+	},
+	"ssaa": {
+		"description": "新渲染器SSAA倍数",
+		"type": "int",
+		"default": 2,
+		"hint": "有效范围1~8整数，为1时不生效。SSAA（超级采样抗锯齿），需要注意多倍的性能消耗为单倍的倍数的平方(n^2)，可以通过以下公式估算自己可以开几倍（不代表适合开）：SSAA = 2 + 1.5 × log₂(mem)（其中mem为空闲内存）",
+		"condition": {
+			"new_render": true
+		}
 	},
 	"compress_ill": {
 		"description": "启用随插图像压缩",
@@ -12,7 +27,10 @@
 	"compress_target": {
 		"description": "图像压缩目标边长",
 		"type": "int",
-		"default": 1080
+		"default": 1080,
+		"condition": {
+			"compress_ill": true
+		}
 	},
 	"target_towards": {
 		"description": "压缩目标边长应用",
@@ -22,6 +40,9 @@
 			"width",
 			"longest"
 		],
-		"default": "longest"
+		"default": "longest",
+		"condition": {
+			"compress_ill": true
+		}
 	}
 }
